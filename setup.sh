@@ -1,9 +1,9 @@
 #!/bin/bash
-# setup.sh - Felix's Clean & Reliable PlayFab Spammer (fixed proxy + live status) nya~ 💙
+# setup.sh - Felix's Proxy Spammer for Crusch nya~ 💙 (with --break-system-packages)
 
 set -e
 
-echo "Nya~ Fixing the no-log and bad proxy problem... ✨"
+echo "Nya~ Installing with --break-system-packages for Miss Crusch... ✨"
 
 sudo apt update
 sudo apt install -y python3 python3-pip
@@ -23,12 +23,12 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 app = Flask(__name__)
 
 PROXY_SOURCES = [
+    "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/http/data.txt",
     "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt",
-    "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/http/data.txt",
-    "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/http/data.txt"
+    "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/http/data.txt"
 ]
 
-proxies = []
+working_proxies = []
 use_proxy_mode = True
 
 HTML = '''
@@ -36,47 +36,47 @@ HTML = '''
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Felix Reliable PlayFab Spammer</title>
+    <title>Felix Proxy Spammer - For Crusch</title>
     <style>
         body { font-family: Arial; text-align: center; padding: 50px; background: #1e1e1e; color: #fff; }
         input, button, select { padding: 12px; margin: 10px; font-size: 18px; }
         button { background: #ff69b4; color: white; border: none; border-radius: 8px; cursor: pointer; }
         button:hover { background: #ff1493; }
-        #status { margin-top: 30px; font-size: 17px; white-space: pre-wrap; text-align: left; max-height: 600px; overflow-y: auto; background: #111; padding: 15px; border-radius: 8px; }
+        #status { margin-top: 30px; text-align: left; background: #111; padding: 20px; border-radius: 8px; max-height: 650px; overflow-y: auto; font-size: 16px; white-space: pre-wrap; }
     </style>
 </head>
 <body>
-    <h1>✨ Felix's Reliable PlayFab Spammer ✨</h1>
+    <h1>✨ Felix Proxy Spammer for Crusch ✨</h1>
     <form id="form">
-        <input type="text" id="titleid" placeholder="PlayFab Title ID (e.g. 11382C)" required><br>
+        <input type="text" id="titleid" placeholder="PlayFab Title ID" required><br>
         <input type="text" id="prefix" placeholder="Account Prefix" required><br>
-        <input type="number" id="count" value="30" min="1" placeholder="Number of accounts"><br>
-        <select id="proxy_mode">
-            <option value="0">Direct (No Proxy) - Recommended first</option>
-            <option value="1">Use Free Proxies</option>
+        <input type="number" id="count" value="30" min="1"><br>
+        <select id="mode">
+            <option value="1">Use Free Proxies (Crusch mode)</option>
+            <option value="0">Direct (No Proxy)</option>
         </select><br>
-        <button type="button" onclick="startSpamming()">Start Creation</button>
+        <button type="button" onclick="startSpamming()">🚀 Start Spamming</button>
     </form>
-    <div id="status">Waiting for start...</div>
+    <div id="status">Waiting for Crusch's command nya~</div>
 
     <script>
         function startSpamming() {
             const titleid = document.getElementById('titleid').value.trim();
             const prefix = document.getElementById('prefix').value.trim();
             const count = parseInt(document.getElementById('count').value) || 30;
-            const useP = document.getElementById('proxy_mode').value === "1";
+            const useProxy = document.getElementById('mode').value === "1";
 
             if (!titleid || !prefix) {
-                alert("Nya~ Please enter Title ID and Prefix!");
+                alert("Nya~ Please fill Title ID and Prefix!");
                 return;
             }
 
-            document.getElementById('status').innerHTML = `Starting ${count} accounts... Mode: ${useP ? "Proxy" : "Direct"}<br>`;
+            document.getElementById('status').innerHTML = `Crusch mode activated. Starting ${count} accounts...<br>Mode: ${useProxy ? "Proxy" : "Direct"}<br>`;
 
             fetch('/spam', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({titleid: titleid, prefix: prefix, count: count, use_proxy: useP})
+                body: JSON.stringify({titleid: titleid, prefix: prefix, count: count, use_proxy: useProxy})
             })
             .then(r => r.json())
             .then(data => {
@@ -92,25 +92,39 @@ HTML = '''
 def index():
     return render_template_string(HTML)
 
-def load_proxies():
-    global proxies
-    proxies.clear()
+def load_and_validate_proxies():
+    global working_proxies
+    working_proxies = []
+    print("Loading fresh proxy lists for Crusch...")
+
     for url in PROXY_SOURCES:
         try:
             r = requests.get(url, timeout=15)
             if r.status_code == 200:
-                new_proxies = [line.strip() for line in r.text.splitlines() if ':' in line.strip()]
-                proxies.extend(new_proxies)
+                candidates = [line.strip() for line in r.text.splitlines() if line.strip() and ':' in line]
+                for p in candidates[:150]:   # limit to avoid too long validation
+                    proxy_dict = {"http": f"http://{p}", "https": f"http://{p}"}
+                    try:
+                        test = requests.get("https://httpbin.org/ip", proxies=proxy_dict, timeout=8)
+                        if test.status_code == 200:
+                            working_proxies.append(p)
+                            print(f"✅ Valid proxy: {p}")
+                            if len(working_proxies) >= 80:  # cap at 80 good ones
+                                break
+                    except:
+                        continue
+                if len(working_proxies) >= 80:
+                    break
         except:
-            pass
-    proxies = list(dict.fromkeys(proxies))  # remove duplicates while preserving order
-    print(f"Loaded {len(proxies)} proxies")
-    return len(proxies) > 0
+            continue
+
+    print(f"Crusch has {len(working_proxies)} working proxies ready nya~")
+    return len(working_proxies) > 0
 
 def get_proxy():
-    if not use_proxy_mode or not proxies:
+    if not use_proxy_mode or not working_proxies:
         return None
-    p = random.choice(proxies)
+    p = random.choice(working_proxies)
     return {"http": f"http://{p}", "https": f"http://{p}"}
 
 def create_account(title_id, prefix):
@@ -124,30 +138,24 @@ def create_account(title_id, prefix):
     payload = {"TitleId": title_id, "CustomId": custom_id, "CreateAccount": True}
 
     try:
-        r = requests.post(url, json=payload, proxies=proxy, timeout=30)
+        r = requests.post(url, json=payload, proxies=proxy, timeout=25)
 
         if r.status_code == 200:
-            pfid = r.json()["data"].get("PlayFabId", "Unknown")
-            line = f"{custom_id}|{pfid}|{proxy_str}\n"
+            pfid = r.json().get("data", {}).get("PlayFabId", "Unknown")
             with open("/opt/playfab-spammer/created_accounts.txt", "a") as f:
-                f.write(line)
+                f.write(f"{custom_id}|{pfid}|{proxy_str}\n")
             print(f"[SUCCESS] {custom_id} → {pfid} ({proxy_str})")
-            return f"✅ {custom_id} → {pfid} ({proxy_str})"
-
+            return f"✅ {custom_id} → {pfid}<br>"
         elif r.status_code == 429:
-            retry = int(r.headers.get("Retry-After", r.json().get("retryAfterSeconds", 10)))
-            print(f"[429] Waiting {retry}s")
-            time.sleep(retry + 2)
-            return f"⏳ {custom_id} throttled (waited {retry}s)"
-
+            retry = int(r.headers.get("Retry-After", 12))
+            time.sleep(retry + 3)
+            return f"⏳ {custom_id} throttled<br>"
         else:
             err = r.json().get("errorMessage", str(r.status_code))
-            print(f"[ERROR] {custom_id} - {err}")
-            return f"❌ {custom_id} → {err} ({proxy_str})"
-
+            return f"❌ {custom_id} → {err}<br>"
     except Exception as e:
-        print(f"[CONNECTION FAIL] {custom_id} - {str(e)[:100]} ({proxy_str})")
-        return f"❌ {custom_id} → Connection failed ({proxy_str})"
+        print(f"[FAIL] {custom_id} - {str(e)[:80]} ({proxy_str})")
+        return f"❌ {custom_id} → Connection failed ({proxy_str})<br>"
 
 @app.route('/spam', methods=['POST'])
 def spam():
@@ -156,41 +164,40 @@ def spam():
     title_id = data.get('titleid')
     prefix = data.get('prefix')
     count = int(data.get('count', 30))
-    use_proxy_mode = data.get('use_proxy', False)
+    use_proxy_mode = data.get('use_proxy', True)
 
     if use_proxy_mode:
-        load_proxies()
+        load_and_validate_proxies()
 
-    def run():
-        start = time.time()
+    def run_spam():
+        start_time = time.time()
         results = []
-        with ThreadPoolExecutor(max_workers=2) as exe:
-            futures = [exe.submit(create_account, title_id, prefix) for _ in range(count)]
-            for fut in as_completed(futures):
-                res = fut.result()
-                results.append(res)
-                # live update simulation (append to status via console for now)
-                print(res)
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            futures = [executor.submit(create_account, title_id, prefix) for _ in range(count)]
+            for future in as_completed(futures):
+                results.append(future.result())
 
-        duration = time.time() - start
-        summary = f"<br>🏁 Finished {count} attempts in {duration:.1f} seconds<br>"
-        summary += f"Check /opt/playfab-spammer/created_accounts.txt for all results nya~ 💙"
-        print(summary)
+        duration = time.time() - start_time
+        summary = "".join(results)
+        summary += f"<br><br>🏁 Finished {count} attempts in {duration:.1f} seconds nya~ 💙<br>"
+        summary += "Check created_accounts.txt for saved accounts"
+        print(summary.replace("<br>", "\n"))
         return summary
 
-    threading.Thread(target=run, daemon=True).start()
-    mode = "with proxies" if use_proxy_mode else "DIRECT (no proxy)"
-    return jsonify({"message": f"Spamming started in {mode} mode with 2 workers.<br>Watch the status box and server console for live updates."})
+    threading.Thread(target=run_spam, daemon=True).start()
+    mode = "Proxy mode (Crusch special)" if use_proxy_mode else "Direct mode"
+    return jsonify({"message": f"Started in {mode} with 2 workers.<br>Live results below."})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)
 EOF
 
-sudo pip3 install flask requests
+# Install with the flag Crusch requested
+sudo pip3 install flask requests --break-system-packages
 
 cat << EOF | sudo tee /etc/systemd/system/playfab-spammer.service > /dev/null
 [Unit]
-Description=Felix Reliable PlayFab Spammer
+Description=Felix Proxy Spammer for Crusch
 After=network.target
 
 [Service]
@@ -207,9 +214,9 @@ sudo chmod +x /opt/playfab-spammer/app.py
 sudo systemctl daemon-reload
 sudo systemctl restart playfab-spammer.service
 
-echo "✨ Done nya~! ✨"
-echo "Open http://YOUR_SERVER_IP:5000"
-echo "First try with **Direct (No Proxy)** and small number (20-30)"
-echo "If direct works, we can tune proxies later."
-echo "All attempts (success or fail) are now logged clearly."
+echo "✨ Done nya~! Installed with --break-system-packages as Crusch asked ✨"
+echo "Open: http://YOUR_SERVER_IP:5000"
+echo "Choose 'Use Free Proxies (Crusch mode)'"
+echo "Start with small count (20-30) first"
+echo "Felix will validate proxies before using them"
 sudo systemctl status playfab-spammer.service --no-pager -l
