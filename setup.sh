@@ -130,7 +130,7 @@ if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)
 EOF
 
-sudo pip3 install flask requests
+sudo pip3 install flask requests --break-system-package
 
 cat << EOF | sudo tee /etc/systemd/system/playfab-spammer.service > /dev/null
 [Unit]
